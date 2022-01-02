@@ -74,26 +74,73 @@ class Point:
 
             if type(args)==dict:
                 value = init(**args)
+            elif type(args)==tuple:
+                #print(*args)
+                value = init(*args)
             else:
                 value = init(args)
 
             setattr(self, key, value)
-            
-            # if not(arg_dict==None):
-            #     if not(arg_dict[key]==None):
-            #         dim_arg_dict = arg_dict[key]
+    
+    def set_space(self, space):
+        self.space= space
 
-            # value = dim_init(**dim_arg_dict)
-            # setattr(self, key, value)
+    def copy(self):
 
-            # if type(dim_arg_dict) == dict:
-            #     value = initiator(**dim_arg_dict)
-            #     setattr(self, key, value)
-            # else:
-            #     value = initiator(init_dict[key])
-            #     setattr(self, key, value)
+        #first make a clean deep copy
+        point = copy.deepcopy(self)
+        #then make sure to set the space back to same parent space
+        point.set_space(self.space)
 
-# class Trajectory:
+        return point
+        
+
+class Trajectory:
+
+    def __init__(self, point):
+        """
+        A Trajectory is an ordered sequence of points in a space
+        input point must be of class Point
+        """
+        self.space = point.space
+        self.points= [point]
+        self.dynamics = Dynamics(self.space)
+        self.length = 1
+
+    def append_point(self,point):
+        if point.space == self.space:
+            self.points.append(point)
+            self.length +=1
+        else:
+            Warning("input point not in the right space")
+
+    def append_points(self,points):
+        
+        for point in points:
+            self.append_point(point)
+    
+    def set_dynamics(self, dynamics):
+        self.dynamics = dynamics
+    
+    def apply_dynamics(self, iterations=1):
+        step = self.dynamics.step
+        for _ in range(iterations):
+            p = self.points[-1].copy()
+            point = step(p)
+            self.append_point(point)
+
+class Dynamics:
+    """
+    Dynamics is a map from a space to itself
+    initized as an identity map
+    """
+    def __init__(self, space, step = lambda p: p ):
+        self.space = space
+        self.step = step
+    
+    def set_step(self, func):
+        self.step = func
+
 
 class Metric:
 
