@@ -1,7 +1,7 @@
 exp_config = {
     "Name": "Experiment API Experiment",
     "Description":"This experiment is designed to test how the Experiment class bundles and manages data for many related Simulation class instances.",
-    "Constructor": "/apparatus/constructor.py",
+    "Constructor": "/apparatus/constructor_wip.py",
     ## optional
     "Evaluator":"apparatus/evaluator.py",
     "Trials": 5
