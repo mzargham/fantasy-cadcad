@@ -2,15 +2,27 @@ import numpy as np
 
 class Player:
 
-    def __init__(self, x, y, v=1, c=0):
-        self.x = x
-        self.y = y
-        self.c = c
-        self.v = v
+    def __init__(self, x, y, v=0, a=.5, c=0, r=.1, vmax=1):
+        self.x = x # x position
+        self.y = y # y position
+        self.c = c # countdown to chase
+        self.v = v # speed
+        self.a = a # acceleration
+        self.r = r # reach
+        self.vmax = vmax
+    
+    def accel(self):
+        self.v += self.a
+
+        if self.v > self.vmax:
+            self.v = self.vmax 
+
 
     def chase(self, other):
         
         if self.c ==0:
+
+            self.accel()
 
             if distance(self,other) <= self.v:
                 self.x = other.x
@@ -22,10 +34,14 @@ class Player:
                 self.y += self.v * vector[1]
 
         elif self.c >0:
+            self.v = 0
             self.c -=1
 
 
     def evade(self, other):
+
+            self.accel()
+
             noise = .1*np.random.randn(2)
             vector = np.array(direction(self,other))+noise
             self.x -= self.v * vector[0]
