@@ -398,8 +398,8 @@ class Stage(Dynamics):
         self.policies = policies
         self.mechanisms = mechanisms
         self.inputSpace = spacewise_cartesian([m.domain for m in mechanisms])
-
-        super().__init__(system.statespace, step=step)
+        
+        super().__init__(system.statespace, block=block)
 
     def update_inputSpace(self):
 
