@@ -17,9 +17,9 @@ class Space:
                 dtype = schema[key]
                 dim = Dimension(key, dtype, lambda arg: dtype(arg) )
                 setattr(self, key, dim)
-                self.append_dimensions.append(key)
+                self.dimensions.append(key)
             except:
-                Warning("One or more dimensions in schema underspecified")
+                print(Warning("One or more dimensions in schema underspecified"))
 
     def point(self, args):
             return Point(self,args)
@@ -51,6 +51,49 @@ class Space:
             self.metrics.append(key)
             setattr(self, key, metric)
 
+def cartersian(space1,space2):
+    dims1 = space1.dimensions
+    dims2 = space2.dimensions
+    #dims = dims1+dims2
+    #print(dims)
+
+    name1 = space1.name
+    name2 = space2.name
+    name = name1+str(" X ")+name2
+
+    metrics1 = space1.metrics
+    metrics2 = space2.metrics
+    #metrics = metrics1 + metrics2
+    #print(metrics)
+
+    space = Space(name=name)
+
+    for dim in dims1:
+        d = getattr(space1,dim)
+        space.append_dimension(dim,d.dtype,d.init)
+
+    for met in metrics1:
+        m = getattr(space1,met)
+        space.append_metric(met,m)
+    
+    for dim in dims2:
+        d = getattr(space2,dim)
+        space.append_dimension(dim,d.dtype,d.init)
+
+    for met in metrics2:
+        m = getattr(space2,met)
+        space.append_metric(met,m)
+
+    return space
+
+def chain_cartesian(spaces):
+    
+    base = Space(name="cartesian produce of spaces "+str(spaces))
+    for space in spaces:
+        base = cartersian(base, space)
+    
+    return base
+    
 
 def space_from_point(point):
 
@@ -250,11 +293,85 @@ def chain(blocks):
 
     return block
 
-
-
-
 #class Stage:
 
-#class Mechanism:
+class System():
 
-#class Policy:
+    def __init__(self, statespace, paramspace):
+        """
+        this is a generalized dynamical system
+        statespace is a space
+        paramspace is a space
+        stages is a list of dynamics
+        if you have a system you can more easily make
+        instances of dynamics by composing policies and mechanism
+        """
+        self.statespace = statespace
+        self.paramspace = paramspace
+
+        self.stages = []
+
+    def set_statespace(self,space):
+        self.statespace = space
+
+    def set_paramspace(self,space):
+        self.paramspace = space
+
+    def append_stage(self,dynamics):
+        self.stages.append(dynamics)
+
+    def insert_stage(self, dynamics, index):
+        self.stages.insert(index, dynamics)
+    
+
+class Stage(Dynamics):
+
+    def __init__(self, system, policies=[], mechanisms=[], step = lambda p: p):
+        self.policies = policies
+        self.mechanisms = mechanisms
+
+        super().__init__(system.statespace, step=step)
+
+    def append_policy(self, policy):   
+
+        self.polices.append(policy)
+
+    def append_mechanism(self, mechanism):
+
+        self.mechanisms.append(mechanism)
+
+    def update_step(self):
+
+        ###
+        # fill in logic
+        # combine policies
+        # combine mechanisms
+        # combines policies with mechanisms
+        # results in a statespace->statespace map
+        ###
+
+        self.step
+
+
+
+
+        
+
+class Mechanism(Block):
+
+    def __init__(self, domain, codomain, func, description=None):
+        super().__init__(domain, codomain, func, description=description)
+
+        
+
+class Policy(Block):
+
+    def __init__(self, domain, codomain, func, description=None, observables =[]):
+        super().__init__(domain, codomain, func, description=description)
+
+        self.observables = observables
+
+    def set_observables(self, observables):
+        #observables should be a subset of keys of the domain
+        self.observables = observables
+
