@@ -295,6 +295,13 @@ def chain(blocks):
 
 #class Stage:
 
+### work in progress below
+# systems will be composed of multistage dynamics
+# from here we can work out way back to
+# simulations
+# and eventually
+# experiments
+
 class System():
 
     def __init__(self, statespace, paramspace):
@@ -351,9 +358,6 @@ class Stage(Dynamics):
         ###
 
         self.step
-
-
-
 
         
 
