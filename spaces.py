@@ -86,13 +86,31 @@ def cartersian(space1,space2):
 
     return space
 
-def chain_cartesian(spaces):
+def spacewise_cartesian(spaces):
     
     base = Space(name="cartesian produce of spaces "+str(spaces))
     for space in spaces:
         base = cartersian(base, space)
     
     return base
+
+def pointwise_cartesian(points):
+
+    #combine spaces of points then make a new point in the new space
+    spaces = [p.space for p in points]
+    space = spacewise_cartesian(spaces)
+
+    spaces = []
+    args = {}
+    for p in points:
+        spaces.append(p.space)
+        for d in p.state.dimensions:
+            args[d] = getattr(p,d)
+
+    space = spacewise_cartesian(spaces)
+    point = Point(space,args)
+
+    return point
     
 
 def space_from_point(point):
@@ -232,7 +250,7 @@ class Block:
         else:
             Warning("domain must be a Space")
 
-    def set_cdomain(self,space):
+    def set_codomain(self,space):
         if type(space)==Space:
             self.codomain = space
         else:
@@ -264,7 +282,38 @@ class Block:
 
         return Block(domain,codomain,func, description=description)
 
-    
+def parallel(blocks):
+    #    | ->[ ] -->|
+    # -->| ->[ ] -->| x | -->   
+    #    | ->[ ] -->|
+
+    N = len(blocks)
+
+    check = 1
+    for n in range(N-1):
+        check *= int(blocks[n].domain==blocks[n+1].domain)
+
+    if check:
+        domain = blocks[0].domain
+        codomain = spacewise_cartesian([b.codomain for b in blocks])
+
+        def func(point):
+            # assumes point in domain
+            points = []
+            for b in blocks:
+                output = b.map(point)
+                points.append(output)
+
+            return pointwise_cartesian(points)
+
+        block = Block(domain,codomain, func)
+
+        return block
+
+    else:
+        print(Warning("domains of parallel blocks do not match"))
+
+
 def chain(blocks):
     # runs left to right
     # domain->[  ] -> [ ] -> [ ]->codomain
@@ -341,11 +390,19 @@ class Stage(Dynamics):
     def __init__(self, system, policies=[], mechanisms=[], step = lambda p: p):
         self.policies = policies
         self.mechanisms = mechanisms
+        self.inputSpace = spacewise_cartesian([m.domain for m in mechanisms])
 
         super().__init__(system.statespace, step=step)
 
+    def update_inputSpace(self):
+
+        self.inputSpace = spacewise_cartesian([m.domain for m in self.mechanisms])
+    
     def append_policy(self, policy):   
 
+        self.update_inputSpace()
+
+        policy.set_codomain(self.inputSpace)
         policy.set_domain(self.system.statespace)
 
         for obs in policy.observables:
@@ -355,7 +412,7 @@ class Stage(Dynamics):
                 print(Warning('observable not in system statespace'))
 
         self.polices.append(policy)
-
+    
     def append_mechanism(self, mechanism):
         
         mechanism.set_codomain(self.system.statespace)
@@ -366,18 +423,31 @@ class Stage(Dynamics):
             print(Warning('output dimension not in system statespace'))
 
         self.mechanisms.append(mechanism)
+        self.update_inputSpace()
 
     def update_step(self):
 
-        ###
-        # fill in logic
+        inputMap = parallel(self.policies)
+        inputs = [d for d in inputMap.codomain.dimensions]
+        
+        # inputMap.codomain == self.inputSpace
+        stateUpdateMap = parallel(self.mechanisms)
+
+        stateUpdateMap.set_domain(inputMap.codomain)
+
+        states_updated = [d for d in stateUpdateMap.codomain.dimensions]
+
+        stateUpdateMap.set_description("inputs = "+str(inputs)+" and states updated = "+str(states_updated))
+
+        block = stateUpdateMap.compose(inputMap)
         # combine policies
         # combine mechanisms
         # combines policies with mechanisms
         # results in a statespace->statespace map
         ###
 
-        self.step
+        self.step = block.map
+
 
         
 
