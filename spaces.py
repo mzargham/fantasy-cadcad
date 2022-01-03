@@ -329,6 +329,11 @@ class System():
 
     def insert_stage(self, dynamics, index):
         self.stages.insert(index, dynamics)
+
+    ### plan to have Systems generate "trajectories of trajectories"
+    ### where the inner lists loops through substeps or stages (each of which are dynamics)
+    ### where the outer list contains the ordering of timesteps
+    ### stages seems like a better term than substep
     
 
 class Stage(Dynamics):
@@ -341,9 +346,24 @@ class Stage(Dynamics):
 
     def append_policy(self, policy):   
 
+        policy.set_domain(self.system.statespace)
+
+        for obs in policy.observables:
+            if obs in self.system.statespace:
+                pass
+            else:
+                print(Warning('observable not in system statespace'))
+
         self.polices.append(policy)
 
     def append_mechanism(self, mechanism):
+        
+        mechanism.set_codomain(self.system.statespace)
+
+        if mechanism.dimension in self.system.statesoace:
+            pass
+        else:
+            print(Warning('output dimension not in system statespace'))
 
         self.mechanisms.append(mechanism)
 
@@ -363,10 +383,10 @@ class Stage(Dynamics):
 
 class Mechanism(Block):
 
-    def __init__(self, domain, codomain, func, description=None):
+    def __init__(self, domain, codomain, dimension, func, description=None):
         super().__init__(domain, codomain, func, description=description)
 
-        
+        self.dimension = dimension
 
 class Policy(Block):
 
