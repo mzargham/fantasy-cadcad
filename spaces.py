@@ -159,3 +159,102 @@ class Metric:
     def set_description(self, description):
         self.description = description
 
+class Block:
+    """
+    the point of these Blocks is to take an input
+    in the domain and map it to an output in the codomain
+    usage:
+    
+    point_in_codomain = block.map(point_in_domain)
+    """
+    def __init__(self,domain,codomain, func, description=None):
+        
+        self.description = description
+
+        if type(domain)==Space:
+            self.domain = domain
+        else:
+            Warning("domain must be a Space")
+        
+        if type(codomain)==Space:
+            self.codomain = codomain
+        else:
+            Warning("codomain must be a Space")
+        
+        self.map = func
+
+    def set_domain(self,space):
+        if type(space)==Space:
+            self.domain = space
+        else:
+            Warning("domain must be a Space")
+
+    def set_cdomain(self,space):
+        if type(space)==Space:
+            self.codomain = space
+        else:
+            Warning("codomain must be a Space")
+
+    def set_func(self, func):
+
+        self.map = func
+
+    def set_description(self, description):
+        self.description= description
+
+    def compose(self, block):
+        """
+        pt_in_codomain_of_self = self.map(block.map(pt_in_domain_of_block))
+        """
+        func = lambda point: self.map(block.map(point))
+
+        description = "made by composition; collapsed space is called '"+str(self.domain.name)+"'"
+
+        return Block(block.domain, self.codomain, func, description=description )
+
+    def copy(self):
+        
+        domain = self.domain
+        codomain = self.codomain
+        func = self.map
+        description = "copy of block: "+str(self)
+
+        return Block(domain,codomain,func, description=description)
+
+    
+def chain(blocks):
+    # runs left to right
+    # domain->[  ] -> [ ] -> [ ]->codomain
+    # domain = blocks[0].domain
+    # codomain = blocks[-1].codomain
+
+    # revese the order of the list since composition works in the opposite direction
+    N = len(blocks)
+    block = blocks[N-1]
+    
+    for n in range(N-2,-1,-1):
+
+        new = blocks[n]
+
+        # getting the compositions to chain in reverse
+        # was a huge pain, edit with care
+        #print(n)
+        #print(new.codomain == block.domain)
+        #print("")
+
+        block = block.compose(new)
+
+    description = "chain compose of "+str(blocks)
+    
+    block.set_description(description)
+
+    return block
+
+
+
+
+#class Stage:
+
+#class Mechanism:
+
+#class Policy:
