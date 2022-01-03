@@ -196,12 +196,19 @@ class Dynamics:
     Dynamics is a map from a space to itself
     initized as an identity map
     """
-    def __init__(self, space, step = lambda p: p ):
+    def __init__(self, space, block=None):
+
+        if block == None:
+            block = Block(space, space, lambda point: point)
+            block.set_description('This Block encodes dynamics for statespace '+str(space))
+
+        self.block = block
         self.space = space
-        self.step = step
+        self.step = self.block.map
     
     def set_step(self, func):
-        self.step = func
+        self.block.set_func(func)
+        self.step = self.block.map
 
 
 class Metric:
@@ -387,7 +394,7 @@ class System():
 
 class Stage(Dynamics):
 
-    def __init__(self, system, policies=[], mechanisms=[], step = lambda p: p):
+    def __init__(self, system, policies=[], mechanisms=[], block=None):
         self.policies = policies
         self.mechanisms = mechanisms
         self.inputSpace = spacewise_cartesian([m.domain for m in mechanisms])
@@ -425,19 +432,22 @@ class Stage(Dynamics):
         self.mechanisms.append(mechanism)
         self.update_inputSpace()
 
-    def update_step(self):
+    def update_step(self, updateDescription=False):
 
         inputMap = parallel(self.policies)
-        inputs = [d for d in inputMap.codomain.dimensions]
+        
         
         # inputMap.codomain == self.inputSpace
         stateUpdateMap = parallel(self.mechanisms)
 
         stateUpdateMap.set_domain(inputMap.codomain)
 
-        states_updated = [d for d in stateUpdateMap.codomain.dimensions]
+        
 
-        stateUpdateMap.set_description("inputs = "+str(inputs)+" and states updated = "+str(states_updated))
+        if updateDescription:
+            inputs = [d for d in inputMap.codomain.dimensions]
+            states_updated = [d for d in stateUpdateMap.codomain.dimensions]
+            stateUpdateMap.set_description("inputs = "+str(inputs)+" and states updated = "+str(states_updated))
 
         block = stateUpdateMap.compose(inputMap)
         # combine policies
@@ -446,7 +456,7 @@ class Stage(Dynamics):
         # results in a statespace->statespace map
         ###
 
-        self.step = block.map
+        self.set_step(block)
 
 
         
