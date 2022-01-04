@@ -159,15 +159,24 @@ class Point:
 
 class Trajectory:
 
-    def __init__(self, point):
+    def __init__(self, point, dynamics = None, params = None):
         """
         A Trajectory is an ordered sequence of points in a space
         input point must be of class Point
         """
         self.space = point.space
         self.points= [point]
-        self.dynamics = Dynamics(self.space)
+        self.params = params
+
+        if dynamics == None:
+            self.dynamics = Dynamics(self.space, Block(self.space, self.space, lambda point: point))
+        else:
+            self.dynamics = dynamics
+
         self.length = 1
+    
+    def set_params(self, params):
+        self.params=params
 
     def append_point(self,point):
         if point.space == self.space:
@@ -188,7 +197,10 @@ class Trajectory:
         step = self.dynamics.step
         for _ in range(iterations):
             p = self.points[-1].copy()
-            point = step(p)
+            if self.params ==None:
+                point = step(p)
+            else:
+                point = step(p,self.params)
             self.append_point(point)
 
 class Dynamics:
@@ -235,8 +247,10 @@ class Block:
     
     point_in_codomain = block.map(point_in_domain)
     """
-    def __init__(self,domain,codomain, func, description=None):
+    def __init__(self,domain,codomain, func, paramspace = Space(), description=None):
         
+        self.paramspace = paramspace
+        self.params = paramspace.point({})
         self.description = description
 
         if type(domain)==Space:
@@ -250,6 +264,21 @@ class Block:
             Warning("codomain must be a Space")
         
         self.map = func
+
+    def set_params(self, point, override = False):
+        
+        if override:
+            self.paramspace = point.space
+            self.params = point
+        else:
+            if self.paramspace == point.space:
+                self.params = point
+            else:
+                args = {}
+                for d in self.paramspace.dimensions:
+                    args[d] = getattr(point, d)
+                
+                self.params = self.paramspace.point(args)
 
     def set_domain(self,space):
         if type(space)==Space:
